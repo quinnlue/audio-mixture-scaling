@@ -1,0 +1,50 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "audio-mixture-scaling"
+version = "0.1.0"
+description = "Canonical EAT training repository for audio SSL mixture-scaling experiments"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "torch>=2.4",
+    "numpy>=1.26",
+    "pyarrow>=14",
+    "torchcodec>=0.5",
+    "soxr>=0.5",
+    "pyyaml>=6",
+    "wandb>=0.17",
+    "huggingface_hub>=0.24",
+    "safetensors>=0.4",
+]
+
+[project.optional-dependencies]
+eval = ["scikit-learn>=1.4", "pandas>=2.1", "soundfile>=0.12"]
+prep = ["datasets>=2.20", "scikit-learn>=1.4", "soundfile>=0.12"]
+dev = ["pytest>=8", "ruff>=0.5", "mypy>=1.10"]
+
+[project.scripts]
+ams-pretrain = "ams.cli.pretrain:main"
+ams-eval-hear = "ams.cli.eval_hear:main"
+ams-mixture = "ams.cli.mixture:main"
+ams-prep = "ams.cli.prep:main"
+ams-data-validate = "ams.data.validate:main"
+ams-mixture-analyze = "ams.mixture.analyze:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ams"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.mypy]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

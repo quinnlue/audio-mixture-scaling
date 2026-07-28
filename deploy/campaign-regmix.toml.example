@@ -1,0 +1,70 @@
+schema_version = 1
+
+[campaign]
+id = "regmix-proxy"
+work_root = "/runs"
+min_cuda_capability = "8.0"
+
+[source]
+repository = "https://github.com/OWNER/audio-mixture-scaling.git"
+revision = "0000000000000000000000000000000000000000"
+python = "/venv/main/bin/python"
+install_dependencies = [
+  "numpy==2.1.3",
+  "pyarrow==18.1.0",
+  "soxr==0.5.0.post1",
+  "PyYAML==6.0.2",
+  "wandb==0.19.1",
+  "huggingface_hub==0.27.0",
+  "safetensors==0.4.5",
+]
+
+[[datasets]]
+name = "regmix_blob"
+repo_id = "OWNER/audioset-regmix-blob"
+revision = "0000000000000000000000000000000000000000"
+target = "regmix_blob"
+allow_patterns = [
+  "opus_blob.bin",
+  "opus_offsets.npy",
+  "cluster_index.npy",
+  "distributions.json",
+]
+expected_files = 4
+safety_bytes = 10000000000
+validation_module = "ams.data.validate"
+validation_args = ["--dataset-dir", "{dataset_dir}"]
+
+[results]
+hf_repo = "OWNER/eat-regmix-results"
+hf_prefix = "regmix-proxy"
+private = true
+wandb_project = "eat-regmix-proxy"
+
+[[stages]]
+id = "proxies"
+needs = []
+gpus_per_trial = 1
+max_parallel = 1
+max_attempts = 3
+module = "ams.cli.pretrain"
+trial_id = "dist-{dist_id}"
+args = [
+  "--config", "configs/regmix_proxy.yaml",
+  "--set", "data.blob_dir={dataset_regmix_blob_dir}",
+  "--set", "mixture.distributions={dataset_regmix_blob_dir}/distributions.json",
+  "--set", "mixture.dist_id={dist_id}",
+  "--set", "tracking.campaign_id=regmix-proxy",
+  "--set", "tracking.trial_id=dist-{dist_id}",
+  "--set", "tracking.wandb_run_id={wandb_run_id}",
+  "--output-dir", "{trial_dir}",
+]
+
+[stages.matrix]
+dist_id = ["0", "1", "2"]
+
+[analysis]
+module = "ams.mixture.analyze"
+args = ["--output-dir", "{output_dir}"]
+output_dir = "analysis"
+expected_trials = ["dist-0", "dist-1", "dist-2"]

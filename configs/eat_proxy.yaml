@@ -1,0 +1,29 @@
+model:
+  d_model: 144
+  depth: 4
+  num_heads: 3
+  mlp_ratio: 4.0
+  patch_size: [16, 16]
+  num_mel_bins: 128
+  target_length: 1024
+  sample_rate: 16000
+  dropout: 0.0
+  layer_norm_eps: 1.0e-6
+  max_time_patches: 768
+  decoder_depth: 6
+ufo:
+  mask_ratio: 0.8
+  block_size: [2, 2]
+  num_masks: 16
+  mask_token_init_scale: 0.02
+  ema_decay: 0.9998
+  ema_end_decay: 0.99999
+  ema_anneal_steps: 39833
+  loss_beta: 2.0
+  average_top_k_layers: 4
+  instance_norm_target_layer: true
+  batch_norm_target_layer: false
+  layer_norm_target_layer: false
+  layer_norm_targets: true
+  instance_norm_targets: false
+
