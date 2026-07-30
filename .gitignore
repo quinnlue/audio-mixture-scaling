@@ -12,3 +12,6 @@ outputs/
 results/
 checkpoints/
 
+# results/ is meant for run outputs, not the write-ups of what they showed.
+!docs/results/
+
