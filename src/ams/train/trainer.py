@@ -123,7 +123,11 @@ class Trainer:
         if not is_main():
             return
         for callback in self.callbacks:
-            getattr(callback, method)(self.state, *args)
+            # Callbacks are structural, not subclasses, so a hook only some of them
+            # care about (on_export) is simply absent on the rest.
+            handler = getattr(callback, method, None)
+            if handler is not None:
+                handler(self.state, *args)
 
     def _autocast(self) -> contextlib.AbstractContextManager[Any]:
         if self.context.device.type != "cuda" or self.config.loop.precision == "float32":
@@ -261,6 +265,9 @@ class Trainer:
                     every = self.config.checkpoint.save_every_n_steps
                     if every and self.state.optimizer_step % every == 0:
                         self._checkpoint(epoch_complete=False)
+                    export_every = self.config.checkpoint.export_every_n_steps
+                    if export_every and self.state.optimizer_step % export_every == 0:
+                        self._call("on_export")
                     if self.state.optimizer_step >= self.total_steps:
                         break
                 epoch_complete = self.state.batch_in_epoch >= len(self.train_loader)

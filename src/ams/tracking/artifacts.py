@@ -150,6 +150,10 @@ class LocalArtifacts:
             metrics=metrics,
         )
 
+    def on_export(self, state: Any) -> None:
+        destination = self.export_model(state)
+        self._event("export_ready", optimizer_step=state.optimizer_step, path=str(destination))
+
     def on_end(self, state: Any) -> None:
         if not (self.result_dir / "hear_metrics.jsonl").is_file():
             self.write_result(state)

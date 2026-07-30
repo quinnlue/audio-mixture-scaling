@@ -15,6 +15,8 @@ class Callback(Protocol):
 
     def on_validation(self, state: Any, metrics: dict[str, float]) -> None: ...
 
+    def on_export(self, state: Any) -> None: ...
+
     def on_end(self, state: Any) -> None: ...
 
     def on_failure(self, state: Any, error: BaseException) -> None: ...
@@ -31,6 +33,9 @@ class NoOpCallback:
         pass
 
     def on_validation(self, state: Any, metrics: dict[str, float]) -> None:
+        pass
+
+    def on_export(self, state: Any) -> None:
         pass
 
     def on_end(self, state: Any) -> None:
