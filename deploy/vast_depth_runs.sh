@@ -14,9 +14,12 @@ set -euo pipefail
 source "$(dirname "$(readlink -f "$0")")/vast_env.sh"
 ams_activate
 
-out="$AMS_RUN_ROOT/dist-$DIST_ID"
+# Replicates of a single mixture need distinct output dirs, so the trial label is
+# separable from the mixture it trains on.
+label="${AMS_TRIAL_LABEL:-dist-$DIST_ID}"
+out="$AMS_RUN_ROOT/$label"
 mkdir -p "$out" "$AMS_LOG_DIR"
-exec > >(tee -a "$AMS_LOG_DIR/depth-dist-$DIST_ID.log") 2>&1
+exec > >(tee -a "$AMS_LOG_DIR/depth-$label.log") 2>&1
 
 num_workers="${AMS_NUM_WORKERS:-$(ams_num_workers "$(ams_gpu_count)")}"
 
@@ -30,28 +33,28 @@ PY
 export_every="${AMS_EXPORT_EVERY:-$(( total_steps / ${AMS_EXPORT_DIVISOR:-10} ))}"
 
 while [[ ! -f "$AMS_READY" ]]; do
-  echo "dist-$DIST_ID waiting for the shared RegMix blob"
+  echo "$label waiting for the shared RegMix blob"
   sleep 15
 done
 
 if [[ -f "$out/status.json" ]] && grep -q '"status": "complete"' "$out/status.json"; then
-  echo "dist-$DIST_ID is already complete."
+  echo "$label is already complete."
   exit 0
 fi
 
 resume=()
 if [[ -s "$out/checkpoints/resume.pt" ]]; then
   resume=(--resume "$out/checkpoints/resume.pt")
-  echo "Resuming dist-$DIST_ID on GPU $GPU_ID."
+  echo "Resuming $label on GPU $GPU_ID."
 else
-  echo "Starting dist-$DIST_ID on GPU $GPU_ID, exporting every $export_every of $total_steps steps."
+  echo "Starting $label (dist $DIST_ID) on GPU $GPU_ID, exporting every $export_every of $total_steps steps."
 fi
 
 wandb=(--set "tracking.wandb_mode=$AMS_WANDB")
 if [[ "$AMS_WANDB" != "disabled" ]]; then
   wandb+=(
     --set "tracking.wandb_project=$AMS_WANDB_PROJECT"
-    --set "tracking.wandb_run_id=$AMS_CAMPAIGN-dist-$DIST_ID"
+    --set "tracking.wandb_run_id=$AMS_CAMPAIGN-$label"
   )
 fi
 
@@ -70,10 +73,10 @@ torchrun --standalone --nproc_per_node=1 -m ams.cli.pretrain \
   --set "mixture.distributions=$AMS_BLOB_DIR/distributions.json" \
   --set "mixture.dist_id=$DIST_ID" \
   --set "tracking.campaign_id=$AMS_CAMPAIGN" \
-  --set "tracking.trial_id=dist-$DIST_ID" \
+  --set "tracking.trial_id=$label" \
   "${wandb[@]}" \
   --output-dir "$out" \
   "${resume[@]}" \
   2>&1 | tee -a "$out/console.log"
 
-echo "dist-$DIST_ID finished"
+echo "$label finished"
